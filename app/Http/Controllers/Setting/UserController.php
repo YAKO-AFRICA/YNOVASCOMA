@@ -27,7 +27,7 @@ class UserController extends Controller
     {
 
         $membres = Membre::orderby('idmembre', 'desc')->where('typ_membre','!=','3')->where('codepartenaire','ASC')->get();
-        $reseaux = Reseau::where('codepartenaire','ASCOMA')->get();
+        $reseaux = Reseau::where('codepartenaire','ASC')->get();
 
         $reseauId = $reseaux->pluck('id');
 

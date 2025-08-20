@@ -19,7 +19,7 @@ class ReseauxController extends Controller
     public function index()
     {
 
-        $reseaux = Reseau::where('codepartenaire','CORIS')->orderBy('id', 'desc')->get();
+        $reseaux = Reseau::where('codepartenaire','ASC')->orderBy('id', 'desc')->get();
         $products = Product::all();
         $formules = ProductFormule::all();
         return view('settings.reseaux.index', compact('reseaux', 'products', 'formules'));

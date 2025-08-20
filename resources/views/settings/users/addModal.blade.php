@@ -97,7 +97,7 @@
                                         <option class="form-control" value="{{ $item->code }}">{{ $item->designation }}</option>
                                     @endforeach
                                 </select> --}}
-                                <input type="text" name="codePart" id="codePart" class="form-control muted" value="CORIS" readonly muted>
+                                <input type="text" name="codePart" id="codePart" class="form-control muted" value="ASCOMA" readonly muted style="pointer-events: none; background-color: #e9ecef; opacity: 1">
                                
                             </div>
 
