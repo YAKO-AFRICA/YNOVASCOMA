@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
+use setasign\Fpdi\PdfReader\StreamReader;
 
 class BulletinController extends Controller
 {
@@ -56,17 +57,19 @@ class BulletinController extends Controller
         return view('productions.components.bullettin.basicBulletin', compact('contrat'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
+
+
+
+
+
     public function generateBulletinEtCGU()
     {
         try {
-            // Options pour DomPDF
+            // Options DomPDF
             $options = new Options();
             $options->set('isRemoteEnabled', true);
 
-            // Générer le PDF du bulletin
+            // Générer le PDF bulletin en mémoire
             $pdf = PDF::loadView('productions.components.bullettin.bulletinLibre')
                 ->setPaper('a4', 'portrait')
                 ->setOptions([
@@ -74,25 +77,21 @@ class BulletinController extends Controller
                     'isRemoteEnabled' => true,
                 ]);
 
-            // Répertoire et fichiers
-            $bulletinDir = public_path('documents/bulletin/');
-            if (!is_dir($bulletinDir)) {
-                mkdir($bulletinDir, 0777, true);
-            }
+            $bulletinContent = $pdf->output(); // Contenu binaire du PDF
 
-            $bulletinTempFile = $bulletinDir . 'temp_bulletin.pdf';
-            $finalPdfFile = $bulletinDir . 'Bulletin_Blank.pdf';
+            // --- Écriture dans un fichier temporaire système ---
+            $tempFile = tempnam(sys_get_temp_dir(), 'bulletin_'); 
+            file_put_contents($tempFile, $bulletinContent);
+
+            // Fichier CGU
             $cguFile = public_path('root/cgu/CGsoutienFidel.pdf');
-
-            // Sauvegarde du bulletin
-            $pdf->save($bulletinTempFile);
 
             // Fusion avec FPDI
             $fpdi = new Fpdi();
 
-            // Ajouter bulletin
+            // Charger bulletin
             $fpdi->AddPage();
-            $fpdi->setSourceFile($bulletinTempFile);
+            $fpdi->setSourceFile($tempFile);
             $tplIdx = $fpdi->importPage(1);
             $fpdi->useTemplate($tplIdx);
 
@@ -104,19 +103,18 @@ class BulletinController extends Controller
                 $fpdi->useTemplate($tplIdx);
             }
 
-            // Sauvegarde finale
-            $fpdi->Output($finalPdfFile, 'F');
+            // Supprimer le fichier temporaire immédiatement
+            unlink($tempFile);
 
-            // Supprimer temporaire
-            if (file_exists($bulletinTempFile)) {
-                unlink($bulletinTempFile);
-            }
+            // Sortie finale en mémoire
+            $finalPdfContent = $fpdi->Output('S'); // 'S' = retourne le contenu au lieu de sauvegarder
 
-            // Retourner le PDF final
-            return response()->file($finalPdfFile, [
+            // Retourner directement au navigateur
+            return response($finalPdfContent, 200, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="' . basename($finalPdfFile) . '"'
+                'Content-Disposition' => 'inline; filename="Bulletin_Blank.pdf"',
             ]);
+
         } catch (\Throwable $th) {
             return response()->json([
                 'type' => 'error',
@@ -125,6 +123,8 @@ class BulletinController extends Controller
             ]);
         }
     }
+
+
     public function generate(request $request, $id)
     {
         DB::beginTransaction();
